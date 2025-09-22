@@ -25,45 +25,29 @@
         };
       }
 
-      // --- Boot both systems with fake user ---
-      function bootWithFakeUser() {
-        const fakeUser = generateFakeUser();
-        window.currentFakeUser = fakeUser; // for debugging
+      // --- Boot Intercom with a user ---
+      function bootIntercom(fakeUser) {
+        const settings = {
+          app_id: "g9g2tez9",
+          api_base: "https://api-iam.intercom.io",
+          user_id: fakeUser.id,
+          name: fakeUser.name,
+          email: fakeUser.email,
+          created_at: fakeUser.created_at
+        };
 
-        // Intercom Messenger (Fin standalone) – only user_id matters here
         if (window.Intercom) {
           Intercom("shutdown");
-          Intercom("boot", {
-            app_id: "g9g2tez9",
-            api_base: "https://api-iam.intercom.io",
-            user_id: fakeUser.id,         // Messenger will show Web User {id}
-            created_at: fakeUser.created_at
-          });
-        }
-
-        // Zendesk identify – this is where name/email show up in tickets
-        if (window.zE) {
-          zE("webWidget", "identify", {
-            name: fakeUser.name,
-            email: fakeUser.email
-          });
-        }
-
-        // Debug info on the page
-        const debugBox = document.getElementById("debug-box");
-        if (debugBox) {
-          debugBox.innerHTML = `
-            <p><strong>Name:</strong> ${fakeUser.name}</p>
-            <p><strong>Email:</strong> ${fakeUser.email}</p>
-            <p><strong>ID:</strong> ${fakeUser.id}</p>
-          `;
+          Intercom("boot", settings);
+        } else {
+          window.intercomSettings = settings;
         }
       }
 
       // --- Reset handler ---
       function reset() {
         // Clear cookies + storage
-        document.cookie.split(";").forEach(function (c) {
+        document.cookie.split(";").forEach(c => {
           document.cookie =
             c.trim().split("=")[0] +
             "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/";
@@ -71,9 +55,26 @@
         localStorage.clear();
         sessionStorage.clear();
 
-        // Boot fresh user
-        bootWithFakeUser();
+        // Generate fresh user and boot
+        const fakeUser = generateFakeUser();
+        bootIntercom(fakeUser);
+
+        // Update debug info
+        document.getElementById("debug-box").innerHTML =
+          `<p><strong>Name:</strong> ${fakeUser.name}</p>
+           <p><strong>Email:</strong> ${fakeUser.email}</p>
+           <p><strong>ID:</strong> ${fakeUser.id}</p>`;
       }
+
+      // --- On load: boot a first fake user ---
+      window.addEventListener("load", () => {
+        const fakeUser = generateFakeUser();
+        bootIntercom(fakeUser);
+        document.getElementById("debug-box").innerHTML =
+          `<p><strong>Name:</strong> ${fakeUser.name}</p>
+           <p><strong>Email:</strong> ${fakeUser.email}</p>
+           <p><strong>ID:</strong> ${fakeUser.id}</p>`;
+      });
     </script>
   </head>
 
@@ -89,7 +90,7 @@
       <div id="debug-box" class="text-sm text-left"></div>
     </div>
 
-    <!-- Intercom Messenger Loader -->
+    <!-- Intercom Messenger loader -->
     <script>
       (function () {
         var w = window; var ic = w.Intercom;
@@ -113,14 +114,9 @@
           }
         }
       })();
-
-      // Boot a fake user once the page fully loads
-      window.addEventListener("load", function () {
-        bootWithFakeUser();
-      });
     </script>
 
-    <!-- Zendesk Widget -->
+    <!-- Zendesk Widget (optional) -->
     <script id="ze-snippet"
       src="https://static.zdassets.com/ekr/snippet.js?key=47ffa047-319d-4764-b25e-d8af612030e9"></script>
   </body>
