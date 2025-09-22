@@ -8,44 +8,66 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chance/1.1.11/chance.min.js"></script>
 
     <script>
-      // Generate fake user with Chance.js
+      // --- Generate Fake User ---
       function generateFakeUser() {
         const chance = new Chance();
         const firstName = chance.first();
         const lastName = chance.last();
-        const email = firstName.toLowerCase() + "." + lastName.toLowerCase() + "@example.com";
+        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`;
         const userId = chance.guid();
         const createdAt = Math.floor(Date.now() / 1000);
 
         return {
           id: userId,
-          name: firstName + " " + lastName,
+          name: `${firstName} ${lastName}`,
           email: email,
           created_at: createdAt
         };
       }
 
-      // Boot Intercom with a fake user
-      function bootIntercomWithFakeUser() {
+      // --- Boot Intercom + Zendesk ---
+      function bootWithFakeUser() {
         const fakeUser = generateFakeUser();
 
-        window.intercomSettings = {
-          api_base: "https://api-iam.intercom.io",
+        // Save globally for debugging
+        window.currentFakeUser = fakeUser;
+
+        // Intercom settings
+        const intercomSettings = {
           app_id: "g9g2tez9",
+          api_base: "https://api-iam.intercom.io",
           user_id: fakeUser.id,
           name: fakeUser.name,
           email: fakeUser.email,
           created_at: fakeUser.created_at
         };
 
-        // Shutdown previous session and boot fresh
+        // Restart Intercom session
         if (window.Intercom) {
           Intercom("shutdown");
-          Intercom("boot", window.intercomSettings);
+          Intercom("boot", intercomSettings);
+        }
+
+        // Zendesk identify (requires help center snippet to be loaded)
+        if (window.zE) {
+          zE("webWidget", "identify", {
+            name: fakeUser.name,
+            email: fakeUser.email
+          });
+        }
+
+        // Update debug info
+        const debugBox = document.getElementById("debug-box");
+        if (debugBox) {
+          debugBox.innerHTML = `
+            <p><strong>Name:</strong> ${fakeUser.name}</p>
+            <p><strong>Email:</strong> ${fakeUser.email}</p>
+            <p><strong>ID:</strong> ${fakeUser.id}</p>
+          `;
         }
       }
 
-      // Reset button handler
+      // --- Reset button handler ---
       function reset() {
         // Clear cookies + storage
         document.cookie.split(";").forEach(function (c) {
@@ -56,7 +78,8 @@
         localStorage.clear();
         sessionStorage.clear();
 
-        bootIntercomWithFakeUser();
+        // Boot new user
+        bootWithFakeUser();
       }
     </script>
   </head>
@@ -64,12 +87,13 @@
   <body class="p-6 flex flex-col flex-1 items-center justify-center min-h-screen bg-cover"
     style="background-image: url('https://downloads.intercomcdn.com/i/o/1051523575/8c16c6bb97ae791131ead20c/blur.jpg')">
 
-    <div class="flex flex-col space-y-2 items-center">
+    <div class="flex flex-col space-y-4 items-center bg-white/80 p-4 rounded shadow">
       <div>
         <img src="https://static.intercomassets.com/assets/default-avatars/fin/128-6a5eabbb84cc2b038b2afc6698ca0a974faf7adc9ea9f0fb3c3e78ac12543bc5.png"
           height="50" width="50">
       </div>
-      <button class="bg-black text-white p-2 m-2 rounded hover:bg-opacity-75" onclick="reset()">Reset</button>
+      <button class="bg-black text-white px-4 py-2 rounded hover:bg-opacity-75" onclick="reset()">Reset</button>
+      <div id="debug-box" class="text-sm text-left"></div>
     </div>
 
     <!-- Intercom widget loader -->
@@ -77,7 +101,7 @@
       (function () {
         var w = window; var ic = w.Intercom;
         if (typeof ic === "function") {
-          ic("reattach_activator"); ic("update", w.intercomSettings);
+          ic("reattach_activator"); ic("update", {});
         } else {
           var d = document; var i = function () { i.c(arguments); };
           i.q = []; i.c = function (args) { i.q.push(args); }; w.Intercom = i;
@@ -97,13 +121,14 @@
         }
       })();
 
-      // Boot with a fake user after Intercom loads
+      // Boot with fake user when page finishes loading
       window.addEventListener("load", function () {
-        bootIntercomWithFakeUser();
+        bootWithFakeUser();
       });
     </script>
 
-    <!-- ZD snippet -->
-    <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=47ffa047-319d-4764-b25e-d8af612030e9"></script>
+    <!-- Zendesk widget -->
+    <script id="ze-snippet"
+      src="https://static.zdassets.com/ekr/snippet.js?key=47ffa047-319d-4764-b25e-d8af612030e9"></script>
   </body>
 </html>
