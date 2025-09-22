@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html>
   <head>
@@ -5,119 +6,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chance/1.1.11/chance.min.js"></script>
 
     <script>
-      // --- Generate Fake User ---
-      function generateFakeUser() {
-        const chance = new Chance();
-        const firstName = chance.first();
-        const lastName = chance.last();
-        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`;
-        const userId = chance.guid();
-        const createdAt = Math.floor(Date.now() / 1000);
+      function reset() {
+        const cookies = document.cookie.split(";");
 
-        return {
-          id: userId,
-          name: `${firstName} ${lastName}`,
-          email: email,
-          created_at: createdAt
-        };
+        for (let i = 0; i < cookies.length; i++) {
+
+            const cookie = cookies[i];
+
+            const eqPos = cookie.indexOf("=");
+
+            const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+
+            // Set the cookie's expiration date to a past date to delete it
+
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+
+        }
+
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+        window.location.reload();
+
       }
+    </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chance/1.1.11/chance.min.js"></script>
+<script>
+  // Function to generate fake user data using Chance.js
+  function generateFakeUser() {
+    var chance = new Chance();
 
-      // --- Boot Intercom with a user ---
-      function bootIntercom(fakeUser) {
-        const settings = {
-          app_id: "g9g2tez9",
+    var firstName = chance.first();
+    var lastName = chance.last();
+    var email = firstName.toLowerCase() + '.' + lastName.toLowerCase() + '@example.com';
+    var userId = chance.guid();
+    var createdAt = Math.floor(Date.now() / 1000);
+
+    return {
+      id: userId,
+      name: firstName + ' ' + lastName,
+      email: email,
+      created_at: createdAt
+    };
+  }
+
+  var fakeUser = generateFakeUser();
+</script>
+
+
+  </head>
+  <body class="p-6 flex flex-col flex-1 items-center justify-center min-h-screen bg-cover" style="background-image: url('https://downloads.intercomcdn.com/i/o/1051523575/8c16c6bb97ae791131ead20c/blur.jpg')">
+    <div class="flex flex-col space-y-2 items-center">
+      <div>
+        <img src="https://static.intercomassets.com/assets/default-avatars/fin/128-6a5eabbb84cc2b038b2afc6698ca0a974faf7adc9ea9f0fb3c3e78ac12543bc5.png" height="50" width="50"  >
+      </div>
+      <button class="bg-black text-white p-2 m-2 rounded hover:bg-opacity-75" onclick="reset()">Reset</button>
+    </div>
+    <script>
+        // Populate window.intercomSettings with fake user data
+        window.intercomSettings = {
           api_base: "https://api-iam.intercom.io",
+          app_id: "g9g2tez9",
           user_id: fakeUser.id,
           name: fakeUser.name,
           email: fakeUser.email,
           created_at: fakeUser.created_at
         };
-
-        if (window.Intercom) {
-          Intercom("shutdown");
-          Intercom("boot", settings);
-        } else {
-          window.intercomSettings = settings;
-        }
-      }
-
-      // --- Reset handler ---
-      function reset() {
-        // Clear cookies + storage
-        document.cookie.split(";").forEach(c => {
-          document.cookie =
-            c.trim().split("=")[0] +
-            "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/";
-        });
-        localStorage.clear();
-        sessionStorage.clear();
-
-        // Generate fresh user and boot
-        const fakeUser = generateFakeUser();
-        bootIntercom(fakeUser);
-
-        // Update debug info
-        document.getElementById("debug-box").innerHTML =
-          `<p><strong>Name:</strong> ${fakeUser.name}</p>
-           <p><strong>Email:</strong> ${fakeUser.email}</p>
-           <p><strong>ID:</strong> ${fakeUser.id}</p>`;
-      }
-
-      // --- On load: boot a first fake user ---
-      window.addEventListener("load", () => {
-        const fakeUser = generateFakeUser();
-        bootIntercom(fakeUser);
-        document.getElementById("debug-box").innerHTML =
-          `<p><strong>Name:</strong> ${fakeUser.name}</p>
-           <p><strong>Email:</strong> ${fakeUser.email}</p>
-           <p><strong>ID:</strong> ${fakeUser.id}</p>`;
-      });
-    </script>
-  </head>
-
-  <body class="p-6 flex flex-col flex-1 items-center justify-center min-h-screen bg-cover"
-    style="background-image: url('https://downloads.intercomcdn.com/i/o/1051523575/8c16c6bb97ae791131ead20c/blur.jpg')">
-
-    <div class="flex flex-col space-y-4 items-center bg-white/80 p-4 rounded shadow">
-      <div>
-        <img src="https://static.intercomassets.com/assets/default-avatars/fin/128-6a5eabbb84cc2b038b2afc6698ca0a974faf7adc9ea9f0fb3c3e78ac12543bc5.png"
-          height="50" width="50">
-      </div>
-      <button class="bg-black text-white px-4 py-2 rounded hover:bg-opacity-75" onclick="reset()">Reset</button>
-      <div id="debug-box" class="text-sm text-left"></div>
-    </div>
-
-    <!-- Intercom Messenger loader -->
-    <script>
-      (function () {
-        var w = window; var ic = w.Intercom;
-        if (typeof ic === "function") {
-          ic("reattach_activator"); ic("update", {});
-        } else {
-          var d = document; var i = function () { i.c(arguments); };
-          i.q = []; i.c = function (args) { i.q.push(args); }; w.Intercom = i;
-          var l = function () {
-            var s = d.createElement("script"); s.type = "text/javascript";
-            s.async = true; s.src = "https://widget.intercom.io/widget/g9g2tez9";
-            var x = d.getElementsByTagName("script")[0];
-            x.parentNode.insertBefore(s, x);
-          };
-          if (document.readyState === "complete") {
-            l();
-          } else if (w.attachEvent) {
-            w.attachEvent("onload", l);
+      </script>
+      
+      <script>
+        // Intercom widget loader
+        (function() {
+          var w = window; var ic = w.Intercom;
+          if (typeof ic === "function") {
+            ic('reattach_activator'); ic('update', w.intercomSettings);
           } else {
-            w.addEventListener("load", l, false);
+            var d = document; var i = function() { i.c(arguments); };
+            i.q = []; i.c = function(args) { i.q.push(args); }; w.Intercom = i;
+            var l = function() {
+              var s = d.createElement('script'); s.type = 'text/javascript';
+              s.async = true; s.src = 'https://widget.intercom.io/widget/g9g2tez9';
+              var x = d.getElementsByTagName('script')[0];
+              x.parentNode.insertBefore(s, x);
+            };
+            if (document.readyState === 'complete') {
+              l();
+            } else if (w.attachEvent) {
+              w.attachEvent('onload', l);
+            } else {
+              w.addEventListener('load', l, false);
+            }
           }
-        }
-      })();
-    </script>
-
-    <!-- Zendesk Widget (optional) -->
-    <script id="ze-snippet"
-      src="https://static.zdassets.com/ekr/snippet.js?key=47ffa047-319d-4764-b25e-d8af612030e9"></script>
+        })();
+      </script>
+      
+    <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=47ffa047-319d-4764-b25e-d8af612030e9"> </script>
   </body>
 </html>
